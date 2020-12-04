@@ -80,6 +80,7 @@ export function parse (
   template: string,
   options: CompilerOptions
 ): ASTElement | void {
+  // 1. 解析 options
   warn = options.warn || baseWarn
 
   platformIsPreTag = options.isPreTag || no
@@ -201,6 +202,7 @@ export function parse (
     }
   }
 
+  // 2. 对模板解析
   parseHTML(template, {
     warn,
     expectHTML: options.expectHTML,
@@ -210,6 +212,7 @@ export function parse (
     shouldDecodeNewlinesForHref: options.shouldDecodeNewlinesForHref,
     shouldKeepComment: options.comments,
     outputSourceRange: options.outputSourceRange,
+    // 解析过程中的回调函数，生成 AST
     start (tag, attrs, unary, start, end) {
       // check namespace.
       // inherit parent ns if there is one
@@ -277,6 +280,8 @@ export function parse (
         processRawAttrs(element)
       } else if (!element.processed) {
         // structural directives
+        // 结构化的指令
+        // v-for
         processFor(element)
         processIf(element)
         processOnce(element)
@@ -380,7 +385,7 @@ export function parse (
       }
     },
     comment (text: string, start, end) {
-      // adding anything as a sibling to the root node is forbidden
+      // adding anyting as a sibling to the root node is forbidden
       // comments should still be allowed, but ignored
       if (currentParent) {
         const child: ASTText = {

@@ -101,16 +101,21 @@ function remove (
     capture
   )
 }
-
+// 更新DOM的事件
+// 首次渲染的时候 oldVnode 为空节点
 function updateDOMListeners (oldVnode: VNodeWithData, vnode: VNodeWithData) {
   if (isUndef(oldVnode.data.on) && isUndef(vnode.data.on)) {
     return
   }
+  // 获取节点上注册的事件
   const on = vnode.data.on || {}
   const oldOn = oldVnode.data.on || {}
+  // 获取 vnode 对应的真实 DOM 元素
   target = vnode.elm
+  // 兼容性处理
   normalizeEvents(on)
   updateListeners(on, oldOn, add, remove, createOnceHandler, vnode.context)
+  // 清理对 DOM 元素的引用
   target = undefined
 }
 

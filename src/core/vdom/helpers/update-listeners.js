@@ -59,9 +59,12 @@ export function updateListeners (
   vm: Component
 ) {
   let name, def, cur, old, event
+  // 遍历所有事件的名称
   for (name in on) {
+    // 获取事件处理函数
     def = cur = on[name]
     old = oldOn[name]
+    // 获取是否是once passive capture事件
     event = normalizeEvent(name)
     /* istanbul ignore if */
     if (__WEEX__ && isPlainObject(def)) {
@@ -74,12 +77,15 @@ export function updateListeners (
         vm
       )
     } else if (isUndef(old)) {
+      // 是否对事件处理函数做错误的包装处理
       if (isUndef(cur.fns)) {
+        // 对处理函数包装错误处理
         cur = on[name] = createFnInvoker(cur, vm)
       }
       if (isTrue(event.once)) {
         cur = on[name] = createOnceHandler(event.name, cur, event.capture)
       }
+      // 调用 add 方法注册 DOM 事件
       add(event.name, cur, event.capture, event.passive, event.params)
     } else if (cur !== old) {
       old.fns = cur

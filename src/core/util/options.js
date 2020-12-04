@@ -439,6 +439,7 @@ export function mergeOptions (
  * This function is used because child instances need access
  * to assets defined in its ancestor chain.
  */
+// context.$options, 'components', tag
 export function resolveAsset (
   options: Object,
   type: string,
