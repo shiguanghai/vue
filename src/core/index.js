@@ -3,8 +3,10 @@ import { initGlobalAPI } from './global-api/index'
 import { isServerRendering } from 'core/util/env'
 import { FunctionalRenderContext } from 'core/vdom/create-functional-component'
 
+// 注册 Vue 的静态属性/方法
 initGlobalAPI(Vue)
 
+// 以下三个 defineProperty 与 SSR 服务端渲染相关
 Object.defineProperty(Vue.prototype, '$isServer', {
   get: isServerRendering
 })

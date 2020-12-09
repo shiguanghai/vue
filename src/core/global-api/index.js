@@ -73,6 +73,6 @@ export function initGlobalAPI (Vue: GlobalAPI) {
   initMixin(Vue)
   // 注册 Vue.extend() 基于传入的options返回一个组件的构造函数
   initExtend(Vue)
-  // 注册 Vue.directive()、 Vue.component()、Vue.filter()
+  // 注册 Vue.directive()、Vue.component()、Vue.filter()
   initAssetRegisters(Vue)
 }

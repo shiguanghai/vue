@@ -50,6 +50,7 @@ export function initState (vm: Component) {
   const opts = vm.$options
   if (opts.props) initProps(vm, opts.props)
   if (opts.methods) initMethods(vm, opts.methods)
+  // 数据的初始化
   if (opts.data) {
     initData(vm)
   } else {
@@ -153,7 +154,7 @@ function initData (vm: Component) {
     }
   }
   // observe data
-  // 响应式处理
+  // 数据的响应式处理
   observe(data, true /* asRootData */)
 }
 

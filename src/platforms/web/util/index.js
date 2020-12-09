@@ -10,6 +10,7 @@ export * from './element'
  * Query an element selector if it's not an element already.
  */
 export function query (el: string | Element): Element {
+  // el 是字符串
   if (typeof el === 'string') {
     const selected = document.querySelector(el)
     if (!selected) {

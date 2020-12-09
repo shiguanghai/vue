@@ -29,13 +29,20 @@ Vue.config.getTagNamespace = getTagNamespace
 Vue.config.isUnknownElement = isUnknownElement
 
 // install platform runtime directives & components
+// 设置平台相关的指令和组件(运行时)
+// extend() 将第二个参数对象成员 拷贝到 第一个参数对象中去
+// 指令 v-model、v-show
 extend(Vue.options.directives, platformDirectives)
+// 组件 transition、transition-group
 extend(Vue.options.components, platformComponents)
 
 // install platform patch function
+// 设置平台相关的 __patch__ 方法 (虚拟DOM 转换成 真实DOM)
+// 判断是否是浏览器环境（是 - 直接返回， 非 - 空函数 noop
 Vue.prototype.__patch__ = inBrowser ? patch : noop
 
 // public mount method
+// 设置 $mount 方法，挂载 DOM
 Vue.prototype.$mount = function (
   el?: string | Element,
   hydrating?: boolean
