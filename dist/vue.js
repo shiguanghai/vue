@@ -3578,6 +3578,7 @@
     vm.$scopedSlots = emptyObject;
     // bind the createElement fn to this instance
     // so that we get proper render context inside it.
+    // 将 createElement函数 绑定到这个实例上，这样我们就能在其中获得合适的渲染上下文
     // args order: tag, data, children, normalizationType, alwaysNormalize
     // internal version is used by render functions compiled from templates
     // 对编译生成的 render 进行渲染的方法
@@ -3606,6 +3607,7 @@
 
   function renderMixin (Vue) {
     // install runtime convenience helpers
+    // 安装渲染相关的帮助方法
     installRenderHelpers(Vue.prototype);
 
     Vue.prototype.$nextTick = function (fn) {
@@ -3614,6 +3616,7 @@
 
     Vue.prototype._render = function () {
       var vm = this;
+      // 用户定义 或 模板渲染的render
       var ref = vm.$options;
       var render = ref.render;
       var _parentVnode = ref._parentVnode;
@@ -3892,6 +3895,7 @@
 
   function eventsMixin (Vue) {
     var hookRE = /^hook:/;
+    // 监听当前实例上的自定义事件。事件可以由 vm.$emit 触发。回调函数会接收所有传入事件触发函数的额外参数
     Vue.prototype.$on = function (event, fn) {
       var vm = this;
       if (Array.isArray(event)) {
@@ -3909,6 +3913,7 @@
       return vm
     };
 
+    // 监听一个自定义事件，但是只触发一次。一旦触发之后，监听器就会被移除
     Vue.prototype.$once = function (event, fn) {
       var vm = this;
       function on () {
@@ -3920,6 +3925,7 @@
       return vm
     };
 
+    // 移除自定义事件监听器
     Vue.prototype.$off = function (event, fn) {
       var vm = this;
       // all
@@ -3956,6 +3962,7 @@
       return vm
     };
 
+    // 触发当前实例上的事件。附加参数都会传给监听器回调
     Vue.prototype.$emit = function (event) {
       var vm = this;
       {
@@ -4000,6 +4007,7 @@
     var options = vm.$options;
 
     // locate first non-abstract parent
+    // 找到当前组件的父组件 将其添加到 $children
     var parent = options.parent;
     if (parent && !options.abstract) {
       while (parent.$options.abstract && parent.$parent) {
@@ -4014,6 +4022,7 @@
     vm.$children = [];
     vm.$refs = {};
 
+    // 私有成员
     vm._watcher = null;
     vm._inactive = null;
     vm._directInactive = false;
@@ -4035,9 +4044,11 @@
       // based on the rendering backend used.
       if (!prevVnode) {
         // initial render
+        // 首次渲染
         vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */);
       } else {
         // updates
+        // 数据变化
         vm.$el = vm.__patch__(prevVnode, vnode);
       }
       restoreActiveInstance();
@@ -4056,6 +4067,7 @@
       // updated in a parent's updated hook.
     };
 
+    // 强制更新 调用 _watcher.update()
     Vue.prototype.$forceUpdate = function () {
       var vm = this;
       if (vm._watcher) {
@@ -4063,6 +4075,7 @@
       }
     };
 
+    // 销毁 Vue 实例
     Vue.prototype.$destroy = function () {
       var vm = this;
       if (vm._isBeingDestroyed) {
@@ -4730,12 +4743,16 @@
   function initState (vm) {
     vm._watchers = [];
     var opts = vm.$options;
+    // 将props成员转换成响应式数据，并注入到vue实例
     if (opts.props) { initProps(vm, opts.props); }
+    // 初始化选项中的方法(methods)
     if (opts.methods) { initMethods(vm, opts.methods); }
     // 数据的初始化
     if (opts.data) {
+      // 把data中的成员注入到Vue实例 并转换为响应式对象
       initData(vm);
     } else {
+      // observe数据的响应式处理
       observe(vm._data = {}, true /* asRootData */);
     } 
     if (opts.computed) { initComputed(vm, opts.computed); }
@@ -4749,9 +4766,11 @@
     var props = vm._props = {};
     // cache prop keys so that future props updates can iterate using Array
     // instead of dynamic object key enumeration.
+    // 缓存props key，以便将来的props更新可以使用Array代替动态对象key枚举进行迭代
     var keys = vm.$options._propKeys = [];
     var isRoot = !vm.$parent;
     // root instance props should be converted
+    // 根实例props 要转换
     if (!isRoot) {
       toggleObserving(false);
     }
@@ -4783,6 +4802,8 @@
       // static props are already proxied on the component's prototype
       // during Vue.extend(). We only need to proxy props defined at
       // instantiation here.
+      // 在Vue.extend()中，静态 props 已经被代理到组件的原型上
+      // 我们只需要在实例化时定义代理props
       if (!(key in vm)) {
         proxy(vm, "_props", key);
       }
@@ -4831,7 +4852,8 @@
           "Use prop default value instead.",
           vm
         );
-      } else if (!isReserved(key)) {
+      } else if (!isReserved(key)) { // 不是以 _ / $ 开头
+        // 将当前属性注入到Vue实例
         proxy(vm, "_data", key);
       }
     }
@@ -4949,9 +4971,12 @@
   }
 
   function initMethods (vm, methods) {
+    // 最终 methods和props 都要注入到Vue实例 不能有重名
+    // 因此需获取 props
     var props = vm.$options.props;
     for (var key in methods) {
       {
+        // 判断 methods 成员是否为 function
         if (typeof methods[key] !== 'function') {
           warn(
             "Method \"" + key + "\" has type \"" + (typeof methods[key]) + "\" in the component definition. " +
@@ -4959,12 +4984,14 @@
             vm
           );
         }
+        // 判断methods和props是否有重名
         if (props && hasOwn(props, key)) {
           warn(
             ("Method \"" + key + "\" has already been defined as a prop."),
             vm
           );
         }
+        // 不建议 methods 名称以 _(私有成员) 或 $(Vue提供的成员) 开头
         if ((key in vm) && isReserved(key)) {
           warn(
             "Method \"" + key + "\" conflicts with an existing Vue instance method. " +
@@ -4972,6 +4999,8 @@
           );
         }
       }
+      // 将 methods 注入到 Vue实例，并将this指向Vue实例
+      // 不是 function 直接返回空函数(noop)
       vm[key] = typeof methods[key] !== 'function' ? noop : bind(methods[key], vm);
     }
   }
@@ -5092,6 +5121,7 @@
         // optimize internal component instantiation
         // since dynamic options merging is pretty slow, and none of the
         // internal component options needs special treatment.
+        // 优化内部组件实例化，因为动态选项合并非常慢，而且内部组件选项都不需要特殊处理。
         initInternalComponent(vm, options);
       } else {
         vm.$options = mergeOptions(
@@ -5581,6 +5611,7 @@
 
     // this is used to identify the "base" constructor to extend all plain-object
     // components with in Weex's multi-instance scenarios.
+    // 这是用来标识 "base "构造函数，在Weex的多实例方案中，用它来扩展所有普通对象组件
     Vue.options._base = Vue;
 
     // 设置 keep-alive 组件

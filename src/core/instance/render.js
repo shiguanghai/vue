@@ -26,6 +26,7 @@ export function initRender (vm: Component) {
   vm.$scopedSlots = emptyObject
   // bind the createElement fn to this instance
   // so that we get proper render context inside it.
+  // 将 createElement函数 绑定到这个实例上，这样我们就能在其中获得合适的渲染上下文
   // args order: tag, data, children, normalizationType, alwaysNormalize
   // internal version is used by render functions compiled from templates
   // 对编译生成的 render 进行渲染的方法
@@ -62,6 +63,7 @@ export function setCurrentRenderingInstance (vm: Component) {
 
 export function renderMixin (Vue: Class<Component>) {
   // install runtime convenience helpers
+  // 安装渲染相关的帮助方法
   installRenderHelpers(Vue.prototype)
 
   Vue.prototype.$nextTick = function (fn: Function) {
@@ -70,6 +72,7 @@ export function renderMixin (Vue: Class<Component>) {
 
   Vue.prototype._render = function (): VNode {
     const vm: Component = this
+    // 用户定义 或 模板渲染的render
     const { render, _parentVnode } = vm.$options
 
     if (_parentVnode) {
