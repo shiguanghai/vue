@@ -115,6 +115,7 @@ export default class Watcher {
     } finally {
       // "touch" every property so they are all tracked as
       // dependencies for deep watching
+      // "touch "每一个属性，所以它们都作为依赖关系被跟踪，以便进行深度观察。
       if (this.deep) {
         traverse(value)
       }
@@ -179,6 +180,7 @@ export default class Watcher {
    * Will be called by the scheduler.
    */
   run () {
+    // 是否存活 默认true
     if (this.active) {
       const value = this.get()
       if (

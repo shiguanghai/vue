@@ -22,6 +22,7 @@ const methodsToPatch = [
 /**
  * Intercept mutating methods and emit events
  */
+// 拦截突变方法，并发出事件
 methodsToPatch.forEach(function (method) {
   // cache original method
   // 保存数组原方法
@@ -32,6 +33,7 @@ methodsToPatch.forEach(function (method) {
     const result = original.apply(this, args)
     // 获取数组对象的 ob 对象
     const ob = this.__ob__
+    // 存储数组新增的元素
     let inserted
     switch (method) {
       case 'push':
