@@ -92,6 +92,7 @@ export default class Watcher {
         )
       }
     }
+    // 计算属性中会将 lazy 标记为true
     this.value = this.lazy
       ? undefined
       : this.get()

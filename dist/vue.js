@@ -884,6 +884,7 @@
   /**
    * Intercept mutating methods and emit events
    */
+  // 拦截突变方法，并发出事件
   methodsToPatch.forEach(function (method) {
     // cache original method
     // 保存数组原方法
@@ -897,6 +898,7 @@
       var result = original.apply(this, args);
       // 获取数组对象的 ob 对象
       var ob = this.__ob__;
+      // 存储数组新增的元素
       var inserted;
       switch (method) {
         case 'push':
@@ -918,6 +920,7 @@
 
   /*  */
 
+  // 获取 arrayMethods 特有的成员 返回的是包含名字的数组
   var arrayKeys = Object.getOwnPropertyNames(arrayMethods);
 
   /**
@@ -936,15 +939,20 @@
    * object's property keys into getter/setters that
    * collect dependencies and dispatch updates.
    */
+  // 观察者类，附加到每个被观察对象上
+  // 一旦被附加，观察者就会将目标对象的属性键转换为getter/setter，
+  // 以收集依赖关系并派发更新
   var Observer = function Observer (value) {
     this.value = value;
     this.dep = new Dep();
     // 初始化实例的 vmCount 为0
     this.vmCount = 0;
+    // def 调用 defineProperty 默认不可枚举
     // 将实例挂载到观察对象的 __ob__ 属性
     def(value, '__ob__', this);
     // 数组的响应式处理
     if (Array.isArray(value)) {
+      // 判断当前浏览器是否支持对象的原型属性
       if (hasProto) {
         protoAugment(value, arrayMethods);
       } else {
@@ -963,6 +971,8 @@
    * getter/setters. This method should only be called when
    * value type is Object.
    */
+  // 遍历所有属性，并将它们转换为getter/setter
+  // 只有当值类型为Object时，才应调用此方法
   Observer.prototype.walk = function walk (obj) {
     // 获取观察对象的每一个属性
     var keys = Object.keys(obj);
@@ -987,6 +997,7 @@
    * Augment a target Object or Array by intercepting
    * the prototype chain using __proto__
    */
+  // 通过使用__proto__拦截原型链来增强目标对象或数组
   function protoAugment (target, src) {
     /* eslint-disable no-proto */
     target.__proto__ = src;
@@ -997,6 +1008,7 @@
    * Augment a target Object or Array by defining
    * hidden properties.
    */
+  // 通过定义隐藏属性来增强目标对象或数组
   /* istanbul ignore next */
   function copyAugment (target, src, keys) {
     for (var i = 0, l = keys.length; i < l; i++) {
@@ -1010,14 +1022,20 @@
    * returns the new observer if successfully observed,
    * or the existing observer if the value already has one.
    */
+  // 试图为一个value创建一个observer观察者实例，
+  // 如果成功观察到，则返回新的观察者，
+  // 如果该值已经有观察者，则返回现有的观察者
   function observe (value, asRootData) {
-    // 判断 value 是否是对象
+    // 判断 value 是否是对象 是否是 VNode虚拟DOM 的实例
+    // 如果不是对象/是VNode实例：不需要做响应式处理 直接返回
     if (!isObject(value) || value instanceof VNode) {
       return
     }
     var ob;
-    // 如果 value 有 __ob__(observer对象) 属性 结束
+    // 如果 value 有 __ob__(observer对象) 属性
+    // 判断 value.__ob__ 属性是否是 observer 的实例
     if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
+      // 赋值 最终返回
       ob = value.__ob__;
     } else if (
       shouldObserve &&
@@ -1029,15 +1047,16 @@
       // 创建一个 Observer 对象
       ob = new Observer(value);
     }
+    // 处理为根数据
     if (asRootData && ob) {
       ob.vmCount++;
     }
     return ob
   }
-  // 为一个对象定义一个响应式的属性
   /**
    * Define a reactive property on an Object.
    */
+  // 为一个对象定义一个响应式的属性
   function defineReactive (
     obj,
     key,
@@ -1045,10 +1064,12 @@
     customSetter,
     shallow
   ) {
-    // 创建依赖对象实例
+    // 创建依赖对象实例 收集每一个属性的依赖
     var dep = new Dep();
     // 获取 obj 的属性描述符对象
     var property = Object.getOwnPropertyDescriptor(obj, key);
+    // 通过 configurable 指定当前属性是否为可配置的
+    // 如果为不可配置 意味不可删除/重新定义 直接返回
     if (property && property.configurable === false) {
       return
     }
@@ -1056,6 +1077,7 @@
     // cater for pre-defined getter/setters
     var getter = property && property.get;
     var setter = property && property.set;
+    // 参数为两个时 获取value
     if ((!getter || setter) && arguments.length === 2) {
       val = obj[key];
     }
@@ -1073,6 +1095,7 @@
           dep.depend();
           // 如果子观察目标存在，建立子对象的依赖关系
           if (childOb) {
+            // 为当前子对象收集依赖
             childOb.dep.depend();
             // 如果属性是数组，则特殊处理收集数组对象依赖
             if (Array.isArray(value)) {
@@ -1118,21 +1141,24 @@
    * triggers change notification if the property doesn't
    * already exist.
    */
+  // 设置对象的属性。添加新的属性，如果该属性不存在，则触发更改通知
   function set (target, key, val) {
     if (
       (isUndef(target) || isPrimitive(target))
     ) {
       warn(("Cannot set reactive property on undefined, null, or primitive value: " + ((target))));
     }
-    // 判断 target 是否是对象，key 是否是合法的索引
+    // 判断 target 是否是数组，key 是否是合法的索引
     if (Array.isArray(target) && isValidArrayIndex(key)) {
+      // 判断当前key和数组length的最大值给length
+      // 当我们调用$set传递的索引有可能超过数组的length属性
       target.length = Math.max(target.length, key);
       // 通过 splice 对key位置的元素进行替换
       // splice 在 array.js 进行了响应化的处理
       target.splice(key, 1, val);
       return val
     }
-    // 如果 key 在对象中已经存在直接赋值
+    // 如果 key 在对象中已经存在且不是原型成员 直接赋值
     if (key in target && !(key in Object.prototype)) {
       target[key] = val;
       return val
@@ -1152,7 +1178,7 @@
       target[key] = val;
       return val
     }
-    // 把 key 设置为响应式属性
+    // 如果 ob 存在，把 key 设置为响应式属性
     defineReactive(ob.value, key, val);
     // 发送通知
     ob.dep.notify();
@@ -1162,6 +1188,7 @@
   /**
    * Delete a property and trigger change if necessary.
    */
+  // 删除一个属性并在必要时触发更改
   function del (target, key) {
     if (
       (isUndef(target) || isPrimitive(target))
@@ -1191,6 +1218,7 @@
     }
     // 删除属性
     delete target[key];
+    // 判断是否是响应式的
     if (!ob) {
       return
     }
@@ -1972,6 +2000,7 @@
     pending = false;
     var copies = callbacks.slice(0);
     callbacks.length = 0;
+    // 遍历回到函数数组 依次调用
     for (var i = 0; i < copies.length; i++) {
       copies[i]();
     }
@@ -1988,6 +2017,14 @@
   // where microtasks have too high a priority and fire in between supposedly
   // sequential events (e.g. #4521, #6690, which have workarounds)
   // or even between bubbling of the same event (#6566).
+  // 在这里，我们有使用微任务的异步延迟包装器。
+  // 在2.5中，我们使用了(宏)任务(与微任务相结合)。
+  // 然而，当状态在重绘之前就被改变时，它有微妙的问题。
+  // 另外，在事件处理程序中使用(宏)任务会导致一些奇怪的行为。
+  // 另外，在事件处理程序中使用（宏）任务会导致一些奇怪的行为。
+  // 所以我们现在又到处使用微任务。
+  // 这种权衡的一个主要缺点是，有些情况下，
+  // 微任务的优先级太高，在所谓的顺序事件之间开火，甚至在同一事件的冒泡之间开火
   var timerFunc;
 
   // The nextTick behavior leverages the microtask queue, which can be accessed
@@ -1996,6 +2033,11 @@
   // UIWebView in iOS >= 9.3.3 when triggered in touch event handlers. It
   // completely stops working after triggering a few times... so, if native
   // Promise is available, we will use it:
+  // nextTick行为利用了微任务队列，
+  // 可以通过原生的Promise.then或MutationObserver访问
+  // MutationObserver有更广泛的支持，然而在iOS >= 9.3.3的UIWebView中，
+  // 当在触摸事件处理程序中触发时，它有严重的bug。
+  // 触发几次后就完全停止工作了......所以，如果原生Promise可用，我们会使用它。
   /* istanbul ignore next, $flow-disable-line */
   if (typeof Promise !== 'undefined' && isNative(Promise)) {
     var p = Promise.resolve();
@@ -2006,6 +2048,10 @@
       // microtask queue but the queue isn't being flushed, until the browser
       // needs to do some other work, e.g. handle a timer. Therefore we can
       // "force" the microtask queue to be flushed by adding an empty timer.
+      // 在有问题的UIWebViews中，Promise.then并没有完全break，
+      // 但它可能会卡在一个奇怪的状态，即回调被推送到微任务队列中，
+      // 但队列并没有被刷新，直到浏览器需要做一些其他工作，例如处理一个计时器
+      // 因此，我们可以通过添加一个空的定时器来 "强制 "微任务队列被刷新。
       if (isIOS) { setTimeout(noop); }
     };
     isUsingMicroTask = true;
@@ -2017,6 +2063,7 @@
     // Use MutationObserver where native Promise is not available,
     // e.g. PhantomJS, iOS7, Android 4.4
     // (#6466 MutationObserver is unreliable in IE11)
+    // 在没有本地Promise的地方使用MutationObserver
     var counter = 1;
     var observer = new MutationObserver(flushCallbacks);
     var textNode = document.createTextNode(String(counter));
@@ -2032,11 +2079,15 @@
     // Fallback to setImmediate.
     // Technically it leverages the (macro) task queue,
     // but it is still a better choice than setTimeout.
+    // 降级到setImmediate
+    // 从技术上讲，它利用了（宏）任务队列，
+    // 但它仍然是比setTimeout更好的选择
     timerFunc = function () {
       setImmediate(flushCallbacks);
     };
   } else {
     // Fallback to setTimeout.
+    // 降级到 setTimeout
     timerFunc = function () {
       setTimeout(flushCallbacks, 0);
     };
@@ -2044,6 +2095,7 @@
 
   function nextTick (cb, ctx) {
     var _resolve;
+    // callbacks 存储所有的回调函数
     // 把 cb 加上异常处理存入 callbacks 数组中
     callbacks.push(function () {
       if (cb) {
@@ -2057,6 +2109,7 @@
         _resolve(ctx);
       }
     });
+    // 判断队列是否正在被处理
     if (!pending) {
       pending = true;
       // 调用
@@ -4176,6 +4229,9 @@
     // we set this to vm._watcher inside the watcher's constructor
     // since the watcher's initial patch may call $forceUpdate (e.g. inside child
     // component's mounted hook), which relies on vm._watcher being already defined
+    // 我们在watcher的构造函数中设置为vm._watcher，
+    // 因为watcher的初始补丁可能会调用$forceUpdate(例如在子组件的挂载钩子中)，
+    // 这依赖于vm._watcher已经被定义
     new Watcher(vm, updateComponent, noop, {
       before: function before () {
         if (vm._isMounted && !vm._isDestroyed) {
@@ -4187,6 +4243,7 @@
 
     // manually mounted instance, call mounted on self
     // mounted is called for render-created child components in its inserted hook
+    // 手动挂载的实例，调用挂载在自挂载上，对其插入的钩子中渲染创建的子组件进行调用
     if (vm.$vnode == null) {
       vm._isMounted = true;
       callHook(vm, 'mounted');
@@ -4402,10 +4459,14 @@
     //    user watchers are created before the render watcher)
     // 3. If a component is destroyed during a parent component's watcher run,
     //    its watchers can be skipped.
+    // 1. 组件是由父到子更新的。(因为父部件总是先于子部件创建)
+    // 2. 组件的用户观察器在其渲染观察器之前运行（因为用户观察器是在渲染观察器之前创建的）
+    // 3. 如果一个组件在父组件的观察者运行期间被破坏，其观察者可以跳过
     queue.sort(function (a, b) { return a.id - b.id; });
 
     // do not cache length because more watchers might be pushed
     // as we run existing watchers
+    // 不要缓存length，因为当我们运行现有的watchers时，可能会推送更多的watchers
     for (index = 0; index < queue.length; index++) {
       watcher = queue[index];
       if (watcher.before) {
@@ -4482,15 +4543,20 @@
    * Jobs with duplicate IDs will be skipped unless it's
    * pushed when the queue is being flushed.
    */
+  // 将一个watcher推入watcher队列
+  // 有重复ID的将被跳过，除非在队列刷新时推送
   function queueWatcher (watcher) {
     var id = watcher.id;
     if (has[id] == null) {
       has[id] = true;
+      // 当前队列未被处理
       if (!flushing) {
         queue.push(watcher);
       } else {
         // if already flushing, splice the watcher based on its id
+        // 如果已经刷新，则根据watcher的ID进行拼接
         // if already past its id, it will be run next immediately.
+        // 如果已经过了它的id，就会立即运行下一个
         var i = queue.length - 1;
         while (i > index && queue[i].id > watcher.id) {
           i--;
@@ -4498,6 +4564,7 @@
         queue.splice(i + 1, 0, watcher);
       }
       // queue the flush
+      // 队列是否被执行
       if (!waiting) {
         waiting = true;
 
@@ -4570,6 +4637,7 @@
         );
       }
     }
+    // 计算属性中会将 lazy 标记为true
     this.value = this.lazy
       ? undefined
       : this.get();
@@ -4593,6 +4661,7 @@
     } finally {
       // "touch" every property so they are all tracked as
       // dependencies for deep watching
+      // "touch "每一个属性，所以它们都作为依赖关系被跟踪，以便进行深度观察。
       if (this.deep) {
         traverse(value);
       }
@@ -4657,6 +4726,7 @@
    * Will be called by the scheduler.
    */
   Watcher.prototype.run = function run () {
+    // 是否存活 默认true
     if (this.active) {
       var value = this.get();
       if (
@@ -4754,7 +4824,8 @@
     } else {
       // observe数据的响应式处理
       observe(vm._data = {}, true /* asRootData */);
-    } 
+    }
+    // 计算属性watcher 
     if (opts.computed) { initComputed(vm, opts.computed); }
     if (opts.watch && opts.watch !== nativeWatch) {
       initWatch(vm, opts.watch);
@@ -5028,6 +5099,7 @@
       options = handler;
       handler = handler.handler;
     }
+    // 回调函数可以直接写字符串，回去Vue实例找到对应的函数methods
     if (typeof handler === 'string') {
       handler = vm[handler];
     }

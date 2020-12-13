@@ -24,18 +24,20 @@
           fullName: ''
         }
       },
-      computed: {
+      computed: { // 计算属性
         reversedMessage: function () {
           return this.message.split('').reverse().join('')
         }
       },
       watch: {
+        // 侦听器写法1：
         // 'user.firstName': function (newValue, oldValue) {
         //   this.user.fullName = this.user.firstName + ' ' + this.user.lastName
         // },
         // 'user.lastName': function (newValue, oldValue) {
         //   this.user.fullName = this.user.firstName + ' ' + this.user.lastName
         // },
+        // 侦听器写法2：
         'user': {
           handler: function (newValue, oldValue) {
             this.user.fullName = this.user.firstName + ' ' + this.user.lastName

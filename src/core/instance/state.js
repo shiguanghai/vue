@@ -59,7 +59,8 @@ export function initState (vm: Component) {
   } else {
     // observe数据的响应式处理
     observe(vm._data = {}, true /* asRootData */)
-  } 
+  }
+  // 计算属性watcher 
   if (opts.computed) initComputed(vm, opts.computed)
   if (opts.watch && opts.watch !== nativeWatch) {
     initWatch(vm, opts.watch)
@@ -333,6 +334,7 @@ function createWatcher (
     options = handler
     handler = handler.handler
   }
+  // 回调函数可以直接写字符串，回去Vue实例找到对应的函数methods
   if (typeof handler === 'string') {
     handler = vm[handler]
   }

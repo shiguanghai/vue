@@ -20,11 +20,15 @@
         name: 'Vue.js',
         title: 'Title'
       },
+      // 当属性的值被改变之后不会立即更新DOM
+      // 这个更新是一个异步的过程，
+      // 此时如果立即获取p标签的内容是获取不到的
       mounted() {
         this.msg = 'Hello World'
         this.name = 'Hello snabbdom'
         this.title = 'Vue.js'
   
+        // 如果想获取界面上最新的值
         Vue.nextTick(() => {
           console.log(this.$refs.p1.textContent)
         })

@@ -246,21 +246,24 @@ export function defineReactive (
  * triggers change notification if the property doesn't
  * already exist.
  */
+// 设置对象的属性。添加新的属性，如果该属性不存在，则触发更改通知
 export function set (target: Array<any> | Object, key: any, val: any): any {
   if (process.env.NODE_ENV !== 'production' &&
     (isUndef(target) || isPrimitive(target))
   ) {
     warn(`Cannot set reactive property on undefined, null, or primitive value: ${(target: any)}`)
   }
-  // 判断 target 是否是对象，key 是否是合法的索引
+  // 判断 target 是否是数组，key 是否是合法的索引
   if (Array.isArray(target) && isValidArrayIndex(key)) {
+    // 判断当前key和数组length的最大值给length
+    // 当我们调用$set传递的索引有可能超过数组的length属性
     target.length = Math.max(target.length, key)
     // 通过 splice 对key位置的元素进行替换
     // splice 在 array.js 进行了响应化的处理
     target.splice(key, 1, val)
     return val
   }
-  // 如果 key 在对象中已经存在直接赋值
+  // 如果 key 在对象中已经存在且不是原型成员 直接赋值
   if (key in target && !(key in Object.prototype)) {
     target[key] = val
     return val
@@ -280,7 +283,7 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
     target[key] = val
     return val
   }
-  // 把 key 设置为响应式属性
+  // 如果 ob 存在，把 key 设置为响应式属性
   defineReactive(ob.value, key, val)
   // 发送通知
   ob.dep.notify()
@@ -290,6 +293,7 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
 /**
  * Delete a property and trigger change if necessary.
  */
+// 删除一个属性并在必要时触发更改
 export function del (target: Array<any> | Object, key: any) {
   if (process.env.NODE_ENV !== 'production' &&
     (isUndef(target) || isPrimitive(target))
@@ -319,6 +323,7 @@ export function del (target: Array<any> | Object, key: any) {
   }
   // 删除属性
   delete target[key]
+  // 判断是否是响应式的
   if (!ob) {
     return
   }

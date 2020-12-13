@@ -27,7 +27,9 @@
       function (newValue, oldValue) {
         this.user.fullName = newValue.firstName + ' ' + newValue.lastName
       }, {
+        // 立即执行
         immediate: true,
+        // 监听 uesr 内部属性
         deep: true
       }
     )
