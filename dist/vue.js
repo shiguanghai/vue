@@ -2470,9 +2470,16 @@
   // normalization is needed - if any child is an Array, we flatten the whole
   // thing with Array.prototype.concat. It is guaranteed to be only 1-level deep
   // because functional components already normalize their own children.
+  // 当children包含组件时(且该组件为函数式组件，就会做此处理)
+  // 因为一个函数式组件可能会返回一个Array而不是单个根节点
+  // 在这种情况下，只需要一个简单的归一化（转换为一维数组）
+  // 如果任何一个子代是一个Array，我们就用Array.prototype.concat把整个事情扁平化
+  // 由于函数式组件已经对自己的子代进行了归一化处理，所以保证只有1级深度。
+  // 把二维数组转化为一维数组
   function simpleNormalizeChildren (children) {
     for (var i = 0; i < children.length; i++) {
       if (Array.isArray(children[i])) {
+        // 会把后边数组中的每一个元素（如果元素是数组则展开）拼接到前边数组里
         return Array.prototype.concat.apply([], children)
       }
     }
@@ -2483,6 +2490,8 @@
   // e.g. <template>, <slot>, v-for, or when the children is provided by user
   // with hand-written render functions / JSX. In such cases a full normalization
   // is needed to cater to all possible types of children values.
+  // 调用用户传入的 render 函数，children变量可能是 字符串/数组
+  // 首先判断是否是原始值 是的话把children转化成文本类型的VNode节点，并且包装为数组形式
   function normalizeChildren (children) {
     return isPrimitive(children)
       ? [createTextVNode(children)]
@@ -2495,6 +2504,7 @@
     return isDef(node) && isDef(node.text) && isFalse(node.isComment)
   }
 
+  // 把多维数组通过递归方式转换为一维数组
   function normalizeArrayChildren (children, nestedIndex) {
     var res = [];
     var i, c, lastIndex, last;
@@ -3471,6 +3481,7 @@
 
   // wrapper function for providing a more flexible interface
   // without getting yelled at by flow
+  // 封装函数，用于提供更灵活的接口
   function createElement (
     context,
     tag,
@@ -3479,6 +3490,8 @@
     normalizationType,
     alwaysNormalize
   ) {
+    // 判断第三个参数
+    // 如果 data 是数组或者原始值的话就是 children，实现类似函数重载的机制
     if (Array.isArray(data) || isPrimitive(data)) {
       normalizationType = children;
       children = data;
@@ -3497,12 +3510,14 @@
     children,
     normalizationType
   ) {
+    // data不为空 且为响应式的
     if (isDef(data) && isDef((data).__ob__)) {
        warn(
         "Avoid using observed data object as vnode data: " + (JSON.stringify(data)) + "\n" +
         'Always create fresh vnode data objects in each render!',
         context
       );
+      // 返回空的 VNode 节点
       return createEmptyVNode()
     }
     // <component v-bind:is="currentTabComponent"></component>
@@ -3527,6 +3542,7 @@
       }
     }
     // support single function children as default scoped slot
+    // 处理作用域插槽
     if (Array.isArray(children) &&
       typeof children[0] === 'function'
     ) {
@@ -3534,18 +3550,29 @@
       data.scopedSlots = { default: children[0] };
       children.length = 0;
     }
+    // 用户传递的render函数
     if (normalizationType === ALWAYS_NORMALIZE) {
       // 返回一维数组，处理用户手写的 render
+      // 当手写 render 函数的时候调用
+      // 判断 children 的类型，如果是原始值的话转换成 VNode 的数组
+      // 如果是数组的话，继续处理数组中的元素
+      // 如果数组中的子元素又是数组(slot template)，递归处理
+      // 如果连续两个节点都是字符串会合并文本节点
       children = normalizeChildren(children);
     } else if (normalizationType === SIMPLE_NORMALIZE) {
       // 把二维数组，转换成一维数组
+      // 如果 children 中有函数组件的话，函数组件会返回数组形式
+      // 这时候 children 就是一个二维数组，只需要把二维数组转换为一维数组
       children = simpleNormalizeChildren(children);
     }
+    // 创建 VNode
     var vnode, ns;
+    // 判断 tag 是字符串还是组件
     if (typeof tag === 'string') {
       var Ctor;
       ns = (context.$vnode && context.$vnode.ns) || config.getTagNamespace(tag);
       // 是否是 html 的保留标签
+      // 如果是浏览器的保留标签，创建对应的 VNode
       if (config.isReservedTag(tag)) {
         // platform built-in elements
         if ( isDef(data) && isDef(data.nativeOn)) {
@@ -3560,15 +3587,19 @@
         );
       // 判断是否是 自定义组件
       } else if ((!data || !data.pre) && 
+        // 获取组件
         isDef(Ctor = resolveAsset(context.$options, 'components', tag))) {
         // 查找自定义组件构造函数的声明
         // 根据 Ctor 创建组件的 VNode
         // component
+        // 否则的话创建组件
         vnode = createComponent(Ctor, data, context, children, tag);
       } else {
         // unknown or unlisted namespaced elements
         // check at runtime because it may get assigned a namespace when its
         // parent normalizes children
+        // 在运行时检查未知或未列出命名空间的元素，
+        // 因为当它的父元素对子元素进行规范化处理时，可能会被分配一个命名空间。
         vnode = new VNode(
           tag, data, children,
           undefined, undefined, context
@@ -3691,6 +3722,8 @@
         // There's no need to maintain a stack because all render fns are called
         // separately from one another. Nested component's render fns are called
         // when parent component is patched.
+        // 不需要维护堆栈，因为所有的render fns都是相互独立调用的。
+        // 嵌套组件的render fns在父组件被修补时被调用。
         currentRenderingInstance = vm;
         vnode = render.call(vm._renderProxy, vm.$createElement);
       } catch (e) {
@@ -4095,13 +4128,14 @@
       vm._vnode = vnode;
       // Vue.prototype.__patch__ is injected in entry points
       // based on the rendering backend used.
+      // Vue 原型的 patch 方法是根据所使用的渲染后端在入口中注入
       if (!prevVnode) {
         // initial render
         // 首次渲染
         vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */);
       } else {
         // updates
-        // 数据变化
+        // 数据变化 比较两个vnode的差异把差异更新到真实DOM
         vm.$el = vm.__patch__(prevVnode, vnode);
       }
       restoreActiveInstance();
@@ -6129,6 +6163,8 @@
     var modules = backend.modules;
     var nodeOps = backend.nodeOps;
 
+    // 把模块中的钩子函数全部设置到 cbs 中，将来统一触发
+    // cbs --> { 'create': [fn1, fn2], ... }
     for (i = 0; i < hooks.length; ++i) {
       // cbs['update'] = []
       cbs[hooks[i]] = [];
@@ -6195,10 +6231,15 @@
         // potential patch errors down the road when it's used as an insertion
         // reference node. Instead, we clone the node on-demand before creating
         // associated DOM element for it.
+        // 这个vnode是在之前的渲染中使用的！
+        // 现在作为一个新的节点使用，当它被用作插入/参考节点时，
+        // 覆盖它的elm会导致以后潜在的补丁错误。
+        // 相反，我们在为它创建相关的DOM元素之前，按需克隆节点
         vnode = ownerArray[index] = cloneVNode(vnode);
       }
 
       vnode.isRootInsert = !nested; // for transition enter check
+      // 处理组件情况
       if (createComponent(vnode, insertedVnodeQueue, parentElm, refElm)) {
         return
       }
@@ -6206,7 +6247,9 @@
       var data = vnode.data;
       var children = vnode.children;
       var tag = vnode.tag;
+      // 处理标签情况
       if (isDef(tag)) {
+        // 开发环境判断是否为未知标签（自定义标签）
         {
           if (data && data.pre) {
             creatingElmInVPre++;
@@ -6228,10 +6271,13 @@
 
         /* istanbul ignore if */
         {
+          // 把 vnode 中所有的子元素 转换为 DOM对象
           createChildren(vnode, children, insertedVnodeQueue);
           if (isDef(data)) {
+            // 调用钩子函数
             invokeCreateHooks(vnode, insertedVnodeQueue);
           }
+          // 将 vnode 创建好的dom对象插入到 parenElm
           insert(parentElm, vnode.elm, refElm);
         }
 
@@ -6239,9 +6285,11 @@
           creatingElmInVPre--;
         }
       } else if (isTrue(vnode.isComment)) {
+        // vnode为注释节点
         vnode.elm = nodeOps.createComment(vnode.text);
         insert(parentElm, vnode.elm, refElm);
       } else {
+        // vnode为文本节点
         vnode.elm = nodeOps.createTextNode(vnode.text);
         insert(parentElm, vnode.elm, refElm);
       }
@@ -6580,6 +6628,7 @@
       index,
       removeOnly
     ) {
+      // 如果新旧节点是完全相同的节点，直接返回
       if (oldVnode === vnode) {
         return
       }
@@ -6614,14 +6663,17 @@
         return
       }
 
+      // 触发 prepatch 钩子函数
       var i;
       var data = vnode.data;
       if (isDef(data) && isDef(i = data.hook) && isDef(i = i.prepatch)) {
         i(oldVnode, vnode);
       }
 
+      // 获取新旧 VNode 的子节点
       var oldCh = oldVnode.children;
       var ch = vnode.children;
+      // 触发 update 钩子函数
       if (isDef(data) && isPatchable(vnode)) {
         // 调用 cbs 中的钩子函数，操作节点的属性/样式/事件....
         for (i = 0; i < cbs.update.length; ++i) { cbs.update[i](oldVnode, vnode); }
@@ -6630,33 +6682,41 @@
       }
 
       // 新节点没有文本
+      // vnode 没有 text 属性（说明有可能有子节点）
       if (isUndef(vnode.text)) {
-        // 老节点和老节点都有有子节点
-        // 对子节点进行 diff 操作，调用 updateChildren
+        // 新节点和老节点都有子节点
         if (isDef(oldCh) && isDef(ch)) {
+          // 1.如果新老节点都有子节点并且不相同，
+          // 这时候对比和更新子节点
+          // 对子节点进行 diff 操作，调用 updateChildren
           if (oldCh !== ch) { updateChildren(elm, oldCh, ch, insertedVnodeQueue, removeOnly); }
         } else if (isDef(ch)) {
-          // 新的有子节点，老的没有子节点
+          // 2.新节点有子节点，老的没有子节点
+          // 开发环境 检查新节点的子节点中是否有重复的key
           {
             checkDuplicateKeys(ch);
           }
+          // 如果老节点有文本节点
           // 先清空老节点 DOM 的文本内容，然后为当前 DOM 节点加入子节点
           if (isDef(oldVnode.text)) { nodeOps.setTextContent(elm, ''); }
+          // 把新节点的子节点添转换成真实DOM，添加到 elm DOM树
           addVnodes(elm, null, ch, 0, ch.length - 1, insertedVnodeQueue);
         } else if (isDef(oldCh)) {
-          // 老节点有子节点，新的没有子节点
+          // 3.老节点有子节点，新的没有子节点和文本
           // 删除老节点中的子节点
           removeVnodes(oldCh, 0, oldCh.length - 1);
         } else if (isDef(oldVnode.text)) {
-          // 老节点有文本，新节点没有文本
+          // 新老节点都没有子节点
+          // 4.老节点有文本，新节点没有子节点和文本
           // 清空老节点的文本内容
           nodeOps.setTextContent(elm, '');
         }
       } else if (oldVnode.text !== vnode.text) {
-        // 新老节点都有文本节点
-        // 修改文本
+        // 新老节点都有文本节点 且不同
+        // 修改文本 直接把新节点的文本更新到DOM上
         nodeOps.setTextContent(elm, vnode.text);
       }
+      // 触发 postpatch 钩子函数
       if (isDef(data)) {
         if (isDef(i = data.hook) && isDef(i = i.postpatch)) { i(oldVnode, vnode); }
       }
@@ -6665,6 +6725,7 @@
     function invokeInsertHook (vnode, queue, initial) {
       // delay insert hooks for component root nodes, invoke them after the
       // element is really inserted
+      // 延迟插入组件根节点的钩子，在真正插入元素后再调用它们
       if (isTrue(initial) && isDef(vnode.parent)) {
         vnode.parent.data.pendingInsert = queue;
       } else {
@@ -6806,6 +6867,7 @@
       // 老的 VNode 不存在
       if (isUndef(oldVnode)) {
         // empty mount (likely as component), create new root element
+        // 空挂载(可能是组件)，创建新的根元素
         isInitialPatch = true;
         // 创建新的 VNode
         createElm(vnode, insertedVnodeQueue);
@@ -6844,10 +6906,12 @@
             }
             // either not server-rendered, or hydration failed.
             // create an empty node and replace it
+            // 创建一个空节点，并将其替换
             oldVnode = emptyNodeAt(oldVnode);
           }
 
           // replacing existing element
+          // 取代现有元素
           var oldElm = oldVnode.elm;
           var parentElm = nodeOps.parentNode(oldElm);
 
@@ -6859,6 +6923,7 @@
             // extremely rare edge case: do not insert if old element is in a
             // leaving transition. Only happens when combining transition +
             // keep-alive + HOCs. (#4590)
+            // 极其罕见的边缘情况：如果旧元素处于leaving过渡动画，不要插入
             oldElm._leaveCb ? null : parentElm,
             nodeOps.nextSibling(oldElm)
           );
@@ -8796,8 +8861,10 @@
 
   // the directive module should be applied last, after all
   // built-in modules have been applied.
+  // 指令模块应该在所有内置模块被应用后最后应用
   var modules = platformModules.concat(baseModules);
 
+  // nodeOps 就是一些DOM操作API
   var patch = createPatchFunction({ nodeOps: nodeOps, modules: modules });
 
   /**
