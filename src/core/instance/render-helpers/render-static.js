@@ -3,6 +3,7 @@
 /**
  * Runtime helper for rendering static trees.
  */
+// 用于渲染静态树的运行时帮助程序。
 export function renderStatic (
   index: number,
   isInFor: boolean
@@ -11,6 +12,7 @@ export function renderStatic (
   let tree = cached[index]
   // if has already-rendered static tree and not inside v-for,
   // we can reuse the same tree.
+  // 如果已经渲染了静态树，并且不在v-for里面，我们可以重用同样的树。
   if (tree && !isInFor) {
     return tree
   }

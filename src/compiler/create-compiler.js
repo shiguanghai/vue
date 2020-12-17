@@ -12,7 +12,9 @@ export function createCompilerCreator (baseCompile: Function): Function {
       template: string,
       options?: CompilerOptions
     ): CompiledResult {
+      // 合并 baseOptions 和 complice函数传递过来的options
       const finalOptions = Object.create(baseOptions)
+      // 处理编译过程中出现的错误和信息
       const errors = []
       const tips = []
 
@@ -60,6 +62,7 @@ export function createCompilerCreator (baseCompile: Function): Function {
 
       finalOptions.warn = warn
 
+      // 通过 baseCompile 把模板编译成 render函数
       const compiled = baseCompile(template.trim(), finalOptions)
       if (process.env.NODE_ENV !== 'production') {
         detectErrors(compiled.ast, warn)

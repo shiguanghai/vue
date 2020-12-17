@@ -82,6 +82,7 @@ export function isPromise (val: any): boolean {
 /**
  * Convert a value to a string that is actually rendered.
  */
+// 将一个值转换为实际渲染的字符串
 export function toString (val: any): string {
   return val == null
     ? ''

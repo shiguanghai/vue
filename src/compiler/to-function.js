@@ -26,6 +26,7 @@ export function createCompileToFunctionFn (compile: Function): Function {
     options?: CompilerOptions,
     vm?: Component
   ): CompiledFunctionResult {
+    // 防止污染 vue 的options 故克隆一份
     options = extend({}, options)
     const warn = options.warn || baseWarn
     delete options.warn
@@ -102,6 +103,7 @@ export function createCompileToFunctionFn (compile: Function): Function {
     // check function generation errors.
     // this should only happen if there is a bug in the compiler itself.
     // mostly for codegen development use
+    // 检查函数生成的错误。只有当编译器本身存在错误时，才会出现这种情况。
     /* istanbul ignore if */
     if (process.env.NODE_ENV !== 'production') {
       if ((!compiled.errors || !compiled.errors.length) && fnGenErrors.length) {

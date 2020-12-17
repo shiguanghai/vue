@@ -65,8 +65,8 @@ export function createASTElement (
   return {
     type: 1,
     tag,
-    attrsList: attrs,
-    attrsMap: makeAttrsMap(attrs),
+    attrsList: attrs, // 标签的属性数值
+    attrsMap: makeAttrsMap(attrs), // 转化为对象
     rawAttrsMap: {},
     parent,
     children: []
@@ -268,6 +268,7 @@ export function parse (
       }
 
       if (!inVPre) {
+        // 用来处理 v-pre 指令
         processPre(element)
         if (element.pre) {
           inVPre = true

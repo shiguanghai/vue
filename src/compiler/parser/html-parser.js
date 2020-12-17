@@ -8,6 +8,10 @@
  * Original code by Erik Arvidsson (MPL-1.1 OR Apache-2.0 OR GPL-2.0-or-later)
  * http://erik.eae.net/simplehtmlparser/simplehtmlparser.js
  */
+// HTML解析器 作者：John Resig (ejohn.org) 修改：Juriy "kangax" Zaytsev 原代码：Erik Arvidsson (MPL-1.1 OR Apache-2.0 OR GPL-2.0-or-later)
+// 借鉴一个开源库 simplehtmlparser
+// 文件中定义了很多正则表达式
+// 作用是来匹配 HTML 字符串模板中的内容
 
 import { makeMap, no } from 'shared/util'
 import { isNonPhrasingTag } from 'web/compiler/util'
@@ -70,6 +74,9 @@ export function parseHTML (html, options) {
 
           if (commentEnd >= 0) {
             if (options.shouldKeepComment) {
+              // 如果当前找到注释标签 并且调用 options.comment方法后
+  			      // 会把处理完的文本截取掉 继续去处理剩余的部分
+ 			        // 这个 comment 是调用 parseHTML 的时候传递进来的方法
               options.comment(html.substring(4, commentEnd), index, index + commentEnd + 3)
             }
             advance(commentEnd + 3)
