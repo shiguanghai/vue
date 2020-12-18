@@ -18,7 +18,13 @@ const genStaticKeysCached = cached(genStaticKeys)
  *    create fresh nodes for them on each re-render;
  * 2. Completely skip them in the patching process.
  */
+// 优化的目的：标记抽象语法树的静态节点，即DOM中永远不需要改变的部分
+// 当标记完静态子树后，将来就不需要进行渲染，在patch的时候直接跳过静态子树
+// 一旦我们检测到这些子树，我们就可以做到： 
+// 1. 将它们提升为常量，这样我们就不再需要在每次重新渲染时为它们创建新的节点；
+// 2. 在修补过程中完全跳过它们。
 export function optimize (root: ?ASTElement, options: CompilerOptions) {
+  // 判断root，是否传递 AST 对象
   if (!root) return
   isStaticKey = genStaticKeysCached(options.staticKeys || '')
   isPlatformReservedTag = options.isReservedTag || no
@@ -45,6 +51,9 @@ function markStatic (node: ASTNode) {
     // do not make component slot content static. this avoids
     // 1. components not able to mutate slot nodes
     // 2. static slot content fails for hot-reloading
+    // 不要把组件槽的内容做成静态的，这样就避免了
+    // 1.组件无法突变槽节点
+    // 2.静态槽内容热重装失败。
     // 是组件，不是slot，没有inline-template
     if (
       !isPlatformReservedTag(node.tag) &&

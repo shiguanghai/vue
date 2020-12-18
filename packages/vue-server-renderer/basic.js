@@ -84,6 +84,7 @@
   /**
    * Convert a value to a string that is actually rendered.
    */
+  // 将一个值转换为实际渲染的字符串
   function toString (val) {
     return val == null
       ? ''
@@ -3478,6 +3479,9 @@
 
             if (commentEnd >= 0) {
               if (options.shouldKeepComment) {
+                // 如果当前找到注释标签 并且调用 options.comment方法后
+    			      // 会把处理完的文本截取掉 继续去处理剩余的部分
+   			        // 这个 comment 是调用 parseHTML 的时候传递进来的方法
                 options.comment(html.substring(4, commentEnd), index, index + commentEnd + 3);
               }
               advance(commentEnd + 3);
@@ -3486,6 +3490,7 @@
           }
 
           // http://en.wikipedia.org/wiki/Conditional_comment#Downlevel-revealed_conditional_comment
+          // 通过正则表达式来匹配是否是条件注释
           if (conditionalComment.test(html)) {
             var conditionalEnd = html.indexOf(']>');
 
@@ -3497,6 +3502,7 @@
 
           // Doctype:
           var doctypeMatch = html.match(doctype);
+          // 通过正则表达式来匹配是否是文档声明
           if (doctypeMatch) {
             advance(doctypeMatch[0].length);
             continue
@@ -3504,6 +3510,7 @@
 
           // End tag:
           var endTagMatch = html.match(endTag);
+          // 通过正则表达式来匹配是否是结束标签
           if (endTagMatch) {
             var curIndex = index;
             advance(endTagMatch[0].length);
@@ -3513,7 +3520,9 @@
 
           // Start tag:
           var startTagMatch = parseStartTag();
+          // 通过正则表达式来匹配是否是开始标签
           if (startTagMatch) {
+            // 函数内最终调用了 options.start()
             handleStartTag(startTagMatch);
             if (shouldIgnoreFirstNewline(startTagMatch.tagName, html)) {
               advance(1);
@@ -3904,8 +3913,8 @@
     return {
       type: 1,
       tag: tag,
-      attrsList: attrs,
-      attrsMap: makeAttrsMap(attrs),
+      attrsList: attrs, // 标签的属性数值
+      attrsMap: makeAttrsMap(attrs), // 转化为对象
       rawAttrsMap: {},
       parent: parent,
       children: []
@@ -4107,6 +4116,7 @@
         }
 
         if (!inVPre) {
+          // 用来处理 v-pre 指令
           processPre(element);
           if (element.pre) {
             inVPre = true;
@@ -5306,8 +5316,8 @@
     var isReservedTag = options.isReservedTag || no;
     this.maybeComponent = function (el) { return !!el.component || !isReservedTag(el.tag); };
     this.onceId = 0;
-    this.staticRenderFns = [];
-    this.pre = false;
+    this.staticRenderFns = []; // 存储静态根节点生成的代码
+    this.pre = false; // 记录当前处理的节点是否是用v-pre标记的
   };
 
 
@@ -5316,7 +5326,9 @@
     ast,
     options
   ) {
+    // 代码生成过程中使用到的状态对象
     var state = new CodegenState(options);
+    // AST存在，调用genElement生成代码
     var code = ast ? genElement(ast, state) : '_c("div")';
     return {
       render: ("with(this){return " + code + "}"),
@@ -5329,17 +5341,19 @@
       el.pre = el.pre || el.parent.pre;
     }
 
+    // 处理静态根节点，如果已经被处理过则不再处理
+    // staticProcessed 标记当前节点是否已经处理，genElement会被递归调用，防止重复处理节点
     if (el.staticRoot && !el.staticProcessed) {
       return genStatic(el, state)
-    } else if (el.once && !el.onceProcessed) {
+    } else if (el.once && !el.onceProcessed) { // 处理 v-once指令
       return genOnce(el, state)
-    } else if (el.for && !el.forProcessed) {
+    } else if (el.for && !el.forProcessed) { // 处理 v-for指令
       return genFor(el, state)
-    } else if (el.if && !el.ifProcessed) {
+    } else if (el.if && !el.ifProcessed) { // 处理 v-if指令
       return genIf(el, state)
-    } else if (el.tag === 'template' && !el.slotTarget && !state.pre) {
+    } else if (el.tag === 'template' && !el.slotTarget && !state.pre) { // 不是静态
       return genChildren(el, state) || 'void 0'
-    } else if (el.tag === 'slot') {
+    } else if (el.tag === 'slot') { // 处理 slot标签
       return genSlot(el, state)
     } else {
       // component or element
@@ -5353,7 +5367,8 @@
           // 处理各种指令，包括 genDirectives（model/text/html）
           data = genData$2(el, state);
         }
-
+        // 处理子节点 把el中的子节点转换成creatElement中需要的数组形式
+        // 把数组中的每一个AST对象通过调用genNode生成对应的代码形式
         var children = el.inlineTemplate ? null : genChildren(el, state, true);
         code = "_c('" + (el.tag) + "'" + (data ? ("," + data) : '') + (children ? ("," + children) : '') + ")";
       }
@@ -5371,12 +5386,24 @@
     // Some elements (templates) need to behave differently inside of a v-pre
     // node.  All pre nodes are static roots, so we can use this as a location to
     // wrap a state change and reset it upon exiting the pre node.
+    // 有些元素（模板）需要在v-pre节点里面有不同的表现
+    // 所有的pre节点都是静态的根节点，所以我们可以用这个位置来包裹状态变化，并在退出预节点时将其重置。
     var originalPreState = state.pre;
     if (el.pre) {
       state.pre = el.pre;
     }
+    // 给 staticRenderFns 添加元素
+    // 把静态根节点转换成生成Vnode的对应js代码
+    // 此处调用了genElement，再次处理el的时候，此时el的staticProcessed已经被标记为了true
+    // 静态根节点不再满足genElement前面的判断直接进入else生成对应的代码
+    // （使用数组是因为一个模板中可能有多个静态子节点，
+    // 这里是先把每一个静态子树对应的代码进行存储，
+    // 最后返回的是当前节点对应的代码）
     state.staticRenderFns.push(("with(this){return " + (genElement(el, state)) + "}"));
+    // 当处理完当前节点后，再把原始状态的 state还原
     state.pre = originalPreState;
+    // 返回了_m的调用，传入的是当前节点在staticRenderFns数组中对应的索引（也就是把刚刚生成的代码传递进来）
+    // 注意：这里最终实际传入的是函数的形式（最终这些字符串形式的代码都会被转换为函数）
     return ("_m(" + (state.staticRenderFns.length - 1) + (el.staticInFor ? ',true' : '') + ")")
   }
 
@@ -5711,7 +5738,7 @@
     altGenNode
   ) {
     var children = el.children;
-    if (children.length) {
+    if (children.length) { // AST对象是否有子节点
       var el$1 = children[0];
       // optimize single v-for
       if (children.length === 1 &&
@@ -5728,6 +5755,9 @@
         ? getNormalizationType(children, state.maybeComponent)
         : 0;
       var gen = altGenNode || genNode;
+      // 调用数组的每一个元素，使用获取到的gen()对每一个元素处理并返回
+      // map中最终把所有的子节点转换成了相应的代码
+      // 通过join把数组中的元素使用'，'分割返回一个字符串
       return ("[" + (children.map(function (c) { return gen(c, state); }).join(',')) + "]" + (normalizationType$1 ? ("," + normalizationType$1) : ''))
     }
   }
@@ -5764,11 +5794,13 @@
   }
 
   function genNode (node, state) {
-    if (node.type === 1) {
+    // 判断当前AST对象类型
+    if (node.type === 1) { // 标签
       return genElement(node, state)
-    } else if (node.type === 3 && node.isComment) {
+    } else if (node.type === 3 && node.isComment) { // 注释节点
+      // 生成_e，创建一个被标识为comment的vnode节点
       return genComment(node)
-    } else {
+    } else { // 文本节点
       return genText(node)
     }
   }
@@ -6523,6 +6555,7 @@
       options,
       vm
     ) {
+      // 防止污染 vue 的options 故克隆一份
       options = extend({}, options);
       var warn$1 = options.warn || warn;
       delete options.warn;
@@ -6599,6 +6632,7 @@
       // check function generation errors.
       // this should only happen if there is a bug in the compiler itself.
       // mostly for codegen development use
+      // 检查函数生成的错误。只有当编译器本身存在错误时，才会出现这种情况。
       /* istanbul ignore if */
       {
         if ((!compiled.errors || !compiled.errors.length) && fnGenErrors.length) {
@@ -6629,7 +6663,9 @@
         template,
         options
       ) {
+        // 合并 baseOptions 和 complice函数传递过来的options
         var finalOptions = Object.create(baseOptions);
+        // 处理编译过程中出现的错误和信息
         var errors = [];
         var tips = [];
 
@@ -6677,6 +6713,7 @@
 
         finalOptions.warn = warn;
 
+        // 通过 baseCompile 把模板编译成 render函数
         var compiled = baseCompile(template.trim(), finalOptions);
         {
           detectErrors(compiled.ast, warn);
@@ -7521,6 +7558,7 @@
   /**
    * Runtime helper for rendering static trees.
    */
+  // 用于渲染静态树的运行时帮助程序。
   function renderStatic (
     index,
     isInFor
@@ -7529,15 +7567,20 @@
     var tree = cached[index];
     // if has already-rendered static tree and not inside v-for,
     // we can reuse the same tree.
+    // 如果已经渲染了静态树，并且不在v-for里面，我们可以重用同样的树。
     if (tree && !isInFor) {
       return tree
     }
     // otherwise, render a fresh tree.
+    // 如果没有，从staticRenderFns这个数组中获取静态根节点对应的render函数调用
+    // 此时就生成vnode节点，把结果缓存
     tree = cached[index] = this.$options.staticRenderFns[index].call(
       this._renderProxy,
       null,
       this // for render fns generated for functional component templates
     );
+    // 把当前返回的vnode节点标记为静态的
+    // 将来调用patch函数的时候，内部会判断如果当前vnode为静态，则不再对比节点差异
     markStatic(tree, ("__static__" + index), false);
     return tree
   }

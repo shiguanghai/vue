@@ -85,6 +85,7 @@ export function parseHTML (html, options) {
         }
 
         // http://en.wikipedia.org/wiki/Conditional_comment#Downlevel-revealed_conditional_comment
+        // 通过正则表达式来匹配是否是条件注释
         if (conditionalComment.test(html)) {
           const conditionalEnd = html.indexOf(']>')
 
@@ -96,6 +97,7 @@ export function parseHTML (html, options) {
 
         // Doctype:
         const doctypeMatch = html.match(doctype)
+        // 通过正则表达式来匹配是否是文档声明
         if (doctypeMatch) {
           advance(doctypeMatch[0].length)
           continue
@@ -103,6 +105,7 @@ export function parseHTML (html, options) {
 
         // End tag:
         const endTagMatch = html.match(endTag)
+        // 通过正则表达式来匹配是否是结束标签
         if (endTagMatch) {
           const curIndex = index
           advance(endTagMatch[0].length)
@@ -112,7 +115,9 @@ export function parseHTML (html, options) {
 
         // Start tag:
         const startTagMatch = parseStartTag()
+        // 通过正则表达式来匹配是否是开始标签
         if (startTagMatch) {
+          // 函数内最终调用了 options.start()
           handleStartTag(startTagMatch)
           if (shouldIgnoreFirstNewline(startTagMatch.tagName, html)) {
             advance(1)
