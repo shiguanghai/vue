@@ -109,6 +109,9 @@ export function createComponent (
     return
   }
 
+  // context.$options._base 就是 Vue构造函数
+  // 在_init()会把Vue构造函数中的选项合并到Vue实例的选项中
+  // 所以此处可以通过context（实例的选项）获取_base
   const baseCtor = context.$options._base
 
   // plain options object: turn it into a constructor
@@ -121,6 +124,7 @@ export function createComponent (
 
   // if at this stage it's not a constructor or an async component factory,
   // reject.
+  // 如果现阶段不是构造函数或异步组件工厂，reject
   if (typeof Ctor !== 'function') {
     if (process.env.NODE_ENV !== 'production') {
       warn(`Invalid Component definition: ${String(Ctor)}`, context)
@@ -129,6 +133,7 @@ export function createComponent (
   }
 
   // async component
+  // 异步组件
   let asyncFactory
   if (isUndef(Ctor.cid)) {
     asyncFactory = Ctor
@@ -151,6 +156,7 @@ export function createComponent (
 
   // resolve constructor options in case global mixins are applied after
   // component constructor creation
+  // 解决在创建组件构造函数后合并当前组件选项和通过Vue.mixins混入的情况下的构造函数选项
   resolveConstructorOptions(Ctor)
 
   // transform component v-model data into props & events
@@ -236,6 +242,7 @@ export function createComponentInstanceForVnode (
 }
 
 function installComponentHooks (data: VNodeData) {
+  // 获取用户传入的组件的钩子函数
   const hooks = data.hook || (data.hook = {})
   // 用户可以传递自定义钩子函数
   // 把用户传入的自定义钩子函数和 componentVNodeHooks 中预定义的钩子函数合并
